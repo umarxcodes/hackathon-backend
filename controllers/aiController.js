@@ -16,6 +16,43 @@ const parseJsonResponse = (text) => {
   }
 };
 
+const createFallbackDiagnosis = (symptoms = []) => {
+  const normalized = symptoms.map((item) => `${item}`.toLowerCase());
+  const conditions = [];
+  if (
+    normalized.some((item) => item.includes("fever") || item.includes("cough"))
+  ) {
+    conditions.push("Respiratory Infection");
+  }
+  if (
+    normalized.some(
+      (item) => item.includes("headache") || item.includes("migraine")
+    )
+  ) {
+    conditions.push("Headache Disorder");
+  }
+  if (
+    normalized.some((item) => item.includes("chest") || item.includes("breath"))
+  ) {
+    conditions.push("Cardiorespiratory Concern");
+  }
+  if (!conditions.length && symptoms.length)
+    conditions.push(`Symptom Review: ${symptoms[0]}`);
+  return {
+    conditions,
+    riskLevel: normalized.some(
+      (item) => item.includes("chest") || item.includes("breath")
+    )
+      ? "high"
+      : symptoms.length >= 3
+        ? "medium"
+        : "low",
+    suggestedTests: conditions.length
+      ? ["Vitals check", "Clinical examination"]
+      : ["Doctor review"],
+  };
+};
+
 export const symptomChecker = async (req, res, next) => {
   try {
     const { symptoms, age, gender, history, patientId } = req.body;
@@ -25,11 +62,7 @@ export const symptomChecker = async (req, res, next) => {
 
     const text = await callClaude(prompt);
     const parsed = parseJsonResponse(text);
-    const aiResponse = parsed || {
-      conditions: [],
-      riskLevel: "unknown",
-      suggestedTests: [],
-    };
+    const aiResponse = parsed || createFallbackDiagnosis(symptoms);
 
     const diagnosisLog = await DiagnosisLog.create({
       patientId,
