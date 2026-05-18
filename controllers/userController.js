@@ -1,22 +1,29 @@
+import ApiResponse from "../utils/ApiResponse.js";
 import User from "../models/User.js";
+
+const buildUserQuery = ({ search, role, isActive }) => {
+  const query = {};
+  if (search) query.name = { $regex: search, $options: "i" };
+  if (role) query.role = role;
+  if (typeof isActive !== "undefined") {
+    query.isActive = isActive === "true" || isActive === true;
+  }
+  return query;
+};
 
 export const getUsers = async (req, res, next) => {
   try {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const query = buildUserQuery(req.query);
 
-    const users = await User.find().skip(skip).limit(limit).select("-password");
-    const total = await User.countDocuments();
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: users,
-        message: "Users retrieved",
-        count: users.length,
-        total,
-      });
+    const [users, total] = await Promise.all([
+      User.find(query).select("-password").skip(skip).limit(limit).lean(),
+      User.countDocuments(query),
+    ]);
+
+    return ApiResponse.successList(res, users, total, page, limit);
   } catch (error) {
     next(error);
   }
@@ -25,20 +32,9 @@ export const getUsers = async (req, res, next) => {
 export const createUser = async (req, res, next) => {
   try {
     const { name, email, password, role, subscriptionPlan, avatar } = req.body;
-    if (!name || !email || !password || !role) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "Name, email, password and role are required",
-        });
-    }
-
     const existing = await User.findOne({ email });
     if (existing) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Email already exists" });
+      return ApiResponse.error(res, "Email already exists", 400);
     }
 
     const user = await User.create({
@@ -49,17 +45,8 @@ export const createUser = async (req, res, next) => {
       subscriptionPlan,
       avatar,
     });
-    const userObject = user.toObject();
-    delete userObject.password;
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: userObject,
-        message: "User created",
-        count: 1,
-      });
+    return ApiResponse.success(res, user, "User created", 201);
   } catch (error) {
     next(error);
   }
@@ -69,11 +56,9 @@ export const getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
     if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
+      return ApiResponse.error(res, "User not found", 404);
     }
-    res
-      .status(200)
-      .json({ success: true, data: user, message: "User retrieved", count: 1 });
+    return ApiResponse.success(res, user, "User retrieved");
   } catch (error) {
     next(error);
   }
@@ -81,9 +66,15 @@ export const getUser = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
   try {
-    const allowed = ["name", "role", "isActive", "subscriptionPlan", "avatar"];
+    const allowedFields = [
+      "name",
+      "role",
+      "isActive",
+      "subscriptionPlan",
+      "avatar",
+    ];
     const updates = {};
-    allowed.forEach((field) => {
+    allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
     });
 
@@ -91,12 +82,11 @@ export const updateUser = async (req, res, next) => {
       new: true,
       runValidators: true,
     }).select("-password");
+
     if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
+      return ApiResponse.error(res, "User not found", 404);
     }
-    res
-      .status(200)
-      .json({ success: true, data: user, message: "User updated", count: 1 });
+    return ApiResponse.success(res, user, "User updated");
   } catch (error) {
     next(error);
   }
@@ -108,18 +98,12 @@ export const deleteUser = async (req, res, next) => {
       req.params.id,
       { isActive: false },
       { new: true }
-    );
+    ).select("-password");
+
     if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
+      return ApiResponse.error(res, "User not found", 404);
     }
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: user,
-        message: "User soft deleted",
-        count: 1,
-      });
+    return ApiResponse.success(res, user, "User soft deleted");
   } catch (error) {
     next(error);
   }
@@ -130,14 +114,7 @@ export const getDoctors = async (req, res, next) => {
     const doctors = await User.find({ role: "doctor", isActive: true }).select(
       "-password"
     );
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: doctors,
-        message: "Doctors retrieved",
-        count: doctors.length,
-      });
+    return ApiResponse.success(res, doctors, "Doctors retrieved");
   } catch (error) {
     next(error);
   }

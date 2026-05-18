@@ -12,7 +12,14 @@ const appointmentSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    date: { type: Date, required: [true, "Date is required"] },
+    date: {
+      type: Date,
+      required: [true, "Date is required"],
+      validate: {
+        validator: (v) => v >= new Date(Date.now() - 24 * 60 * 60 * 1000),
+        message: "Cannot book past appointments",
+      },
+    },
     timeSlot: { type: String, required: [true, "Time slot is required"] },
     status: {
       type: String,
@@ -28,6 +35,8 @@ const appointmentSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+appointmentSchema.index({ doctorId: 1, date: 1, timeSlot: 1 });
 
 const Appointment = mongoose.model("Appointment", appointmentSchema);
 export default Appointment;

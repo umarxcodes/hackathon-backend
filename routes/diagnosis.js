@@ -1,6 +1,6 @@
 import express from "express";
-import auth from "../middlewares/auth.js";
-import roleCheck from "../middlewares/roleCheck.js";
+import auth from "../middleware/auth.js";
+import roleCheck from "../middleware/roleCheck.js";
 import {
   getDiagnosisLogs,
   getDiagnosisLogById,

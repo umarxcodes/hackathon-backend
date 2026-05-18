@@ -1,6 +1,7 @@
 import express from "express";
-import auth from "../middlewares/auth.js";
-import roleCheck from "../middlewares/roleCheck.js";
+import auth from "../middleware/auth.js";
+import roleCheck from "../middleware/roleCheck.js";
+import { createPrescriptionValidation } from "../validations/prescriptionValidation.js";
 import {
   getPrescriptions,
   createPrescription,
@@ -12,7 +13,12 @@ import {
 const router = express.Router();
 router.use(auth);
 router.get("/", getPrescriptions);
-router.post("/", roleCheck("doctor"), createPrescription);
+router.post(
+  "/",
+  roleCheck("doctor"),
+  createPrescriptionValidation,
+  createPrescription
+);
 router.get("/:id/pdf", downloadPrescriptionPDF);
 router.get("/:id", getPrescription);
 router.put("/:id", roleCheck("doctor"), updatePrescription);

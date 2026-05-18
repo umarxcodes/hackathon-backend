@@ -1,31 +1,21 @@
 import Appointment from "../models/Appointment.js";
 import Patient from "../models/Patient.js";
+import ApiResponse from "../utils/ApiResponse.js";
 
 export const getAppointments = async (req, res, next) => {
   try {
     const { role, id } = req.user;
     const query = {};
 
-    if (role === "doctor") {
-      query.doctorId = id;
-    }
-    if (role === "patient") {
-      query.bookedBy = id;
-    }
+    if (role === "doctor") query.doctorId = id;
+    if (role === "patient") query.bookedBy = id;
 
     const appointments = await Appointment.find(query)
       .populate("patientId", "name contact")
       .populate("doctorId", "name")
       .populate("bookedBy", "name");
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: appointments,
-        message: "Appointments retrieved",
-        count: appointments.length,
-      });
+    return ApiResponse.success(res, appointments, "Appointments retrieved");
   } catch (error) {
     next(error);
   }
@@ -34,20 +24,9 @@ export const getAppointments = async (req, res, next) => {
 export const createAppointment = async (req, res, next) => {
   try {
     const { patientId, doctorId, date, timeSlot, notes } = req.body;
-    if (!patientId || !doctorId || !date || !timeSlot) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "patientId, doctorId, date and timeSlot are required",
-        });
-    }
-
     const patient = await Patient.findById(patientId);
     if (!patient) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Patient not found" });
+      return ApiResponse.error(res, "Patient not found", 404);
     }
 
     const requestedDate = new Date(date);
@@ -59,12 +38,11 @@ export const createAppointment = async (req, res, next) => {
     });
 
     if (conflict) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "Doctor already has an appointment at this time",
-        });
+      return ApiResponse.error(
+        res,
+        "Doctor already has an appointment at this time",
+        400
+      );
     }
 
     const appointment = await Appointment.create({
@@ -76,14 +54,7 @@ export const createAppointment = async (req, res, next) => {
       bookedBy: req.user.id,
     });
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: appointment,
-        message: "Appointment booked",
-        count: 1,
-      });
+    return ApiResponse.success(res, appointment, "Appointment booked", 201);
   } catch (error) {
     next(error);
   }
@@ -95,19 +66,11 @@ export const getAppointment = async (req, res, next) => {
       .populate("patientId", "name contact")
       .populate("doctorId", "name")
       .populate("bookedBy", "name");
+
     if (!appointment) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Appointment not found" });
+      return ApiResponse.error(res, "Appointment not found", 404);
     }
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: appointment,
-        message: "Appointment retrieved",
-        count: 1,
-      });
+    return ApiResponse.success(res, appointment, "Appointment retrieved");
   } catch (error) {
     next(error);
   }
@@ -115,15 +78,13 @@ export const getAppointment = async (req, res, next) => {
 
 export const updateAppointment = async (req, res, next) => {
   try {
+    const allowedFields = ["status", "notes", "timeSlot", "date"];
     const updates = {};
-    const fields = ["status", "notes", "timeSlot", "date"];
-    fields.forEach((field) => {
+    allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
     });
 
-    if (updates.date) {
-      updates.date = new Date(updates.date);
-    }
+    if (updates.date) updates.date = new Date(updates.date);
 
     const appointment = await Appointment.findByIdAndUpdate(
       req.params.id,
@@ -135,18 +96,9 @@ export const updateAppointment = async (req, res, next) => {
     );
 
     if (!appointment) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Appointment not found" });
+      return ApiResponse.error(res, "Appointment not found", 404);
     }
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: appointment,
-        message: "Appointment updated",
-        count: 1,
-      });
+    return ApiResponse.success(res, appointment, "Appointment updated");
   } catch (error) {
     next(error);
   }
@@ -159,19 +111,11 @@ export const cancelAppointment = async (req, res, next) => {
       { status: "cancelled" },
       { new: true }
     );
+
     if (!appointment) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Appointment not found" });
+      return ApiResponse.error(res, "Appointment not found", 404);
     }
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: appointment,
-        message: "Appointment cancelled",
-        count: 1,
-      });
+    return ApiResponse.success(res, appointment, "Appointment cancelled");
   } catch (error) {
     next(error);
   }
@@ -181,6 +125,7 @@ export const getDoctorSchedule = async (req, res, next) => {
   try {
     const { from, to } = req.query;
     const query = { doctorId: req.params.doctorId };
+
     if (from || to) {
       query.date = {};
       if (from) query.date.$gte = new Date(from);
@@ -191,14 +136,7 @@ export const getDoctorSchedule = async (req, res, next) => {
       .populate("patientId", "name contact")
       .populate("doctorId", "name");
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: schedule,
-        message: "Doctor schedule retrieved",
-        count: schedule.length,
-      });
+    return ApiResponse.success(res, schedule, "Doctor schedule retrieved");
   } catch (error) {
     next(error);
   }

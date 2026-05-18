@@ -1,6 +1,10 @@
 import express from "express";
-import auth from "../middlewares/auth.js";
-import roleCheck from "../middlewares/roleCheck.js";
+import auth from "../middleware/auth.js";
+import roleCheck from "../middleware/roleCheck.js";
+import {
+  createAppointmentValidation,
+  updateAppointmentValidation,
+} from "../validations/appointmentValidation.js";
 import {
   getAppointments,
   createAppointment,
@@ -16,6 +20,7 @@ router.get("/", getAppointments);
 router.post(
   "/",
   roleCheck("admin", "receptionist", "patient"),
+  createAppointmentValidation,
   createAppointment
 );
 router.get(
@@ -24,7 +29,7 @@ router.get(
   getDoctorSchedule
 );
 router.get("/:id", getAppointment);
-router.put("/:id", updateAppointment);
+router.put("/:id", updateAppointmentValidation, updateAppointment);
 router.delete("/:id", cancelAppointment);
 
 export default router;

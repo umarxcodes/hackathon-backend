@@ -1,39 +1,67 @@
 import axios from "axios";
 
-const callGemini = async (prompt) => {
+const callClaude = async (prompt) => {
   try {
-    const url =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
     const response = await axios.post(
-      url,
+      "https://api.anthropic.com/v1/messages",
       {
-        prompt: { text: prompt },
-        temperature: 0.2,
-        maxOutputTokens: 512,
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }],
       },
       {
-        params: {
-          key: process.env.GEMINI_API_KEY,
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
         },
+        timeout: 30000,
       }
     );
 
-    const candidate = response?.data?.candidates?.[0];
-    if (!candidate) return null;
+    const content =
+      response.data?.content ||
+      response.data?.completion?.content ||
+      response.data?.completion?.content?.[0]?.text;
 
-    const content = candidate?.content;
-    if (Array.isArray(content)) {
-      return content.map((item) => item?.text || "").join("");
+    if (!content) {
+      console.error("❌ Unexpected Claude response structure", response.data);
+      return null;
     }
 
-    return candidate?.output || response?.data?.output_text || null;
+    if (typeof content === "string") return content;
+    if (Array.isArray(content)) {
+      const textBlock = content.find(
+        (block) => block.type === "output_text" || block.type === "text"
+      );
+      return textBlock?.text || textBlock?.content || null;
+    }
+
+    return content.text || null;
   } catch (error) {
-    console.error(
-      "Gemini call failed:",
-      error?.response?.data || error.message
-    );
+    if (error.response) {
+      console.error(
+        "❌ Claude API Error:",
+        error.response.status,
+        JSON.stringify(error.response.data)
+      );
+    } else if (error.code === "ECONNABORTED") {
+      console.error("❌ Claude API Timeout: request took too long");
+    } else {
+      console.error("❌ Claude API Network Error:", error.message);
+    }
     return null;
   }
 };
 
-export default callGemini;
+const safeParseJSON = (text) => {
+  try {
+    const cleaned = text.replace(/```json|```/g, "").trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return null;
+  }
+};
+
+export default callClaude;
+export { safeParseJSON };

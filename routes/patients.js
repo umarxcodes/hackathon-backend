@@ -1,6 +1,10 @@
 import express from "express";
-import auth from "../middlewares/auth.js";
-import roleCheck from "../middlewares/roleCheck.js";
+import auth from "../middleware/auth.js";
+import roleCheck from "../middleware/roleCheck.js";
+import {
+  createPatientValidation,
+  updatePatientValidation,
+} from "../validations/patientValidation.js";
 import {
   getPatients,
   createPatient,
@@ -13,7 +17,12 @@ import {
 const router = express.Router();
 router.use(auth);
 router.get("/", roleCheck("admin", "doctor", "receptionist"), getPatients);
-router.post("/", roleCheck("admin", "receptionist"), createPatient);
+router.post(
+  "/",
+  roleCheck("admin", "receptionist"),
+  createPatientValidation,
+  createPatient
+);
 router.get(
   "/:id/timeline",
   roleCheck("admin", "doctor", "receptionist", "patient"),
@@ -24,7 +33,12 @@ router.get(
   roleCheck("admin", "doctor", "receptionist", "patient"),
   getPatient
 );
-router.put("/:id", roleCheck("admin", "receptionist"), updatePatient);
+router.put(
+  "/:id",
+  roleCheck("admin", "receptionist"),
+  updatePatientValidation,
+  updatePatient
+);
 router.delete("/:id", roleCheck("admin"), deletePatient);
 
 export default router;

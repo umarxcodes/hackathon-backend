@@ -1,22 +1,21 @@
 import Prescription from "../models/Prescription.js";
-
 import generatePrescriptionPDF from "../utils/generatePDF.js";
+import ApiResponse from "../utils/ApiResponse.js";
 
 export const getPrescriptions = async (req, res, next) => {
   try {
     const { role, id } = req.user;
     const query = {};
 
-    if (role === "doctor") {
-      query.doctorId = id;
-    }
+    if (role === "doctor") query.doctorId = id;
     if (role === "patient") {
       const patientId = req.query.patientId;
       if (!patientId) {
-        return res.status(400).json({
-          success: false,
-          error: "patientId query is required for patient access",
-        });
+        return ApiResponse.error(
+          res,
+          "patientId query is required for patient access",
+          400
+        );
       }
       query.patientId = patientId;
     }
@@ -25,12 +24,8 @@ export const getPrescriptions = async (req, res, next) => {
       .populate("patientId", "name")
       .populate("doctorId", "name")
       .populate("appointmentId");
-    res.status(200).json({
-      success: true,
-      data: prescriptions,
-      message: "Prescriptions retrieved",
-      count: prescriptions.length,
-    });
+
+    return ApiResponse.success(res, prescriptions, "Prescriptions retrieved");
   } catch (error) {
     next(error);
   }
@@ -40,13 +35,6 @@ export const createPrescription = async (req, res, next) => {
   try {
     const { patientId, doctorId, appointmentId, medicines, instructions } =
       req.body;
-    if (!patientId || !doctorId || !medicines || !instructions) {
-      return res.status(400).json({
-        success: false,
-        error: "patientId, doctorId, medicines and instructions are required",
-      });
-    }
-
     const prescription = await Prescription.create({
       patientId,
       doctorId,
@@ -54,12 +42,8 @@ export const createPrescription = async (req, res, next) => {
       medicines,
       instructions,
     });
-    res.status(201).json({
-      success: true,
-      data: prescription,
-      message: "Prescription created",
-      count: 1,
-    });
+
+    return ApiResponse.success(res, prescription, "Prescription created", 201);
   } catch (error) {
     next(error);
   }
@@ -71,17 +55,11 @@ export const getPrescription = async (req, res, next) => {
       .populate("patientId", "name contact")
       .populate("doctorId", "name")
       .populate("appointmentId");
+
     if (!prescription) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Prescription not found" });
+      return ApiResponse.error(res, "Prescription not found", 404);
     }
-    res.status(200).json({
-      success: true,
-      data: prescription,
-      message: "Prescription retrieved",
-      count: 1,
-    });
+    return ApiResponse.success(res, prescription, "Prescription retrieved");
   } catch (error) {
     next(error);
   }
@@ -89,9 +67,14 @@ export const getPrescription = async (req, res, next) => {
 
 export const updatePrescription = async (req, res, next) => {
   try {
+    const allowedFields = [
+      "medicines",
+      "instructions",
+      "aiExplanation",
+      "pdfUrl",
+    ];
     const updates = {};
-    const fields = ["medicines", "instructions", "aiExplanation", "pdfUrl"];
-    fields.forEach((field) => {
+    allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
     });
 
@@ -103,17 +86,11 @@ export const updatePrescription = async (req, res, next) => {
         runValidators: true,
       }
     );
+
     if (!prescription) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Prescription not found" });
+      return ApiResponse.error(res, "Prescription not found", 404);
     }
-    res.status(200).json({
-      success: true,
-      data: prescription,
-      message: "Prescription updated",
-      count: 1,
-    });
+    return ApiResponse.success(res, prescription, "Prescription updated");
   } catch (error) {
     next(error);
   }
@@ -124,10 +101,9 @@ export const downloadPrescriptionPDF = async (req, res, next) => {
     const prescription = await Prescription.findById(req.params.id)
       .populate("patientId")
       .populate("doctorId");
+
     if (!prescription) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Prescription not found" });
+      return ApiResponse.error(res, "Prescription not found", 404);
     }
 
     const patient = prescription.patientId;
@@ -139,7 +115,7 @@ export const downloadPrescriptionPDF = async (req, res, next) => {
       "Content-Disposition",
       `attachment; filename=prescription-${prescription._id}.pdf`
     );
-    res.send(buffer);
+    return res.send(buffer);
   } catch (error) {
     next(error);
   }

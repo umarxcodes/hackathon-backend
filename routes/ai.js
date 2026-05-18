@@ -1,6 +1,11 @@
 import express from "express";
-import auth from "../middlewares/auth.js";
-import roleCheck from "../middlewares/roleCheck.js";
+import auth from "../middleware/auth.js";
+import roleCheck from "../middleware/roleCheck.js";
+import {
+  symptomCheckerValidation,
+  prescriptionExplanationValidation,
+  riskFlagValidation,
+} from "../validations/aiValidation.js";
 import {
   symptomChecker,
   prescriptionExplanation,
@@ -9,12 +14,23 @@ import {
 
 const router = express.Router();
 router.use(auth);
-router.post("/symptom-checker", roleCheck("doctor"), symptomChecker);
+router.post(
+  "/symptom-checker",
+  roleCheck("doctor"),
+  symptomCheckerValidation,
+  symptomChecker
+);
 router.post(
   "/prescription-explanation",
   roleCheck("doctor", "patient"),
+  prescriptionExplanationValidation,
   prescriptionExplanation
 );
-router.post("/risk-flag", roleCheck("doctor", "admin"), riskFlag);
+router.post(
+  "/risk-flag",
+  roleCheck("doctor", "admin"),
+  riskFlagValidation,
+  riskFlag
+);
 
 export default router;

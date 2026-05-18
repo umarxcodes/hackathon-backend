@@ -1,16 +1,16 @@
 import DiagnosisLog from "../models/DiagnosisLog.js";
 import Prescription from "../models/Prescription.js";
-import callGemini from "../utils/aiHelper.js";
+import callClaude from "../utils/aiHelper.js";
+import ApiResponse from "../utils/ApiResponse.js";
 
 const parseJsonResponse = (text) => {
+  if (!text) return null;
+  const cleaned = text.trim();
+  const start = cleaned.indexOf("{");
+  if (start === -1) return null;
+
   try {
-    const cleaned = text.trim();
-    const jsonStart = cleaned.indexOf("{");
-    if (jsonStart !== -1) {
-      const jsonString = cleaned.slice(jsonStart);
-      return JSON.parse(jsonString);
-    }
-    return null;
+    return JSON.parse(cleaned.slice(start));
   } catch {
     return null;
   }
@@ -19,27 +19,12 @@ const parseJsonResponse = (text) => {
 export const symptomChecker = async (req, res, next) => {
   try {
     const { symptoms, age, gender, history, patientId } = req.body;
-    if (
-      !symptoms ||
-      !Array.isArray(symptoms) ||
-      !age ||
-      !gender ||
-      !patientId
-    ) {
-      return res.status(400).json({
-        success: false,
-        error: "symptoms, age, gender and patientId are required",
-      });
-    }
-
-    const prompt = `You are an advanced medical assistant. Analyze the following data and return a JSON object with keys conditions (array of strings), riskLevel (low, medium, high), and suggestedTests (array of strings). Data: symptoms=${JSON.stringify(
+    const prompt = `You are an advanced medical assistant. Analyze the following patient data and return JSON with keys conditions (array of strings), riskLevel (low, medium, high, unknown), and suggestedTests (array of strings). Data: symptoms=${JSON.stringify(
       symptoms
     )}, age=${age}, gender=${gender}, history=${history || "N/A"}`;
 
-    console.log("AI symptom checker prompt:", prompt);
-    const text = await callGemini(prompt);
+    const text = await callClaude(prompt);
     const parsed = parseJsonResponse(text);
-
     const aiResponse = parsed || {
       conditions: [],
       riskLevel: "unknown",
@@ -52,22 +37,19 @@ export const symptomChecker = async (req, res, next) => {
       symptoms,
       age,
       gender,
-      history: history || "",
-      aiResponse,
+      history: history || "No history provided",
+      aiResponse: { ...aiResponse, rawAiText: text || "" },
       riskLevel: ["low", "medium", "high"].includes(aiResponse.riskLevel)
         ? aiResponse.riskLevel
-        : "low",
+        : "unknown",
+      isFallback: !parsed,
     });
 
-    const fallback = !parsed;
-    res.status(200).json({
-      success: true,
-      data: { aiResponse, diagnosisLog, fallback },
-      message: fallback
-        ? "AI fallback response returned"
-        : "AI diagnosis generated",
-      count: 1,
-    });
+    return ApiResponse.success(
+      res,
+      { aiResponse, diagnosisLog, fallback: !parsed },
+      !parsed ? "AI fallback response returned" : "AI diagnosis generated"
+    );
   } catch (error) {
     next(error);
   }
@@ -76,45 +58,35 @@ export const symptomChecker = async (req, res, next) => {
 export const prescriptionExplanation = async (req, res, next) => {
   try {
     const { prescriptionId } = req.body;
-    if (!prescriptionId) {
-      return res
-        .status(400)
-        .json({ success: false, error: "prescriptionId is required" });
-    }
-
     const prescription = await Prescription.findById(prescriptionId)
       .populate("patientId", "name")
       .populate("doctorId", "name");
+
     if (!prescription) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Prescription not found" });
+      return ApiResponse.error(res, "Prescription not found", 404);
     }
 
     const prompt = `Explain the following prescription in simple language for a patient: medicines=${JSON.stringify(
       prescription.medicines
     )}, instructions=${prescription.instructions}`;
-    console.log("AI prescription explanation prompt:", prompt);
-    const text = await callGemini(prompt);
+    const text = await callClaude(prompt);
 
     if (!text) {
-      return res.status(200).json({
-        success: true,
-        data: { message: "AI unavailable, no explanation generated" },
-        message: "AI fallback used",
-        count: 0,
-      });
+      return ApiResponse.success(
+        res,
+        { message: "AI unavailable, no explanation generated" },
+        "AI fallback used"
+      );
     }
 
     prescription.aiExplanation = text;
     await prescription.save();
 
-    res.status(200).json({
-      success: true,
-      data: { aiExplanation: text },
-      message: "AI explanation generated",
-      count: 1,
-    });
+    return ApiResponse.success(
+      res,
+      { aiExplanation: text },
+      "AI explanation generated"
+    );
   } catch (error) {
     next(error);
   }
@@ -123,26 +95,20 @@ export const prescriptionExplanation = async (req, res, next) => {
 export const riskFlag = async (req, res, next) => {
   try {
     const { patientId } = req.body;
-    if (!patientId) {
-      return res
-        .status(400)
-        .json({ success: false, error: "patientId is required" });
-    }
-
     const logs = await DiagnosisLog.find({ patientId })
       .sort({ createdAt: -1 })
       .limit(10);
+
     if (!logs.length) {
-      return res.status(200).json({
-        success: true,
-        data: {
+      return ApiResponse.success(
+        res,
+        {
           hasRisk: false,
           riskFactors: [],
           recommendation: "No diagnosis logs available",
         },
-        message: "No risk data available",
-        count: 0,
-      });
+        "No risk data available"
+      );
     }
 
     const prompt = `Review these diagnosis logs and identify chronic risk patterns, repeated infections, or concerning symptoms. Return JSON with hasRisk (boolean), riskFactors (array of strings), recommendation (string). Logs=${JSON.stringify(
@@ -152,22 +118,19 @@ export const riskFlag = async (req, res, next) => {
         aiResponse: item.aiResponse,
       }))
     )}`;
-    console.log("AI risk flag prompt:", prompt);
-    const text = await callGemini(prompt);
+    const text = await callClaude(prompt);
     const parsed = parseJsonResponse(text);
-
     const fallbackData = {
       hasRisk: false,
       riskFactors: [],
       recommendation: "AI unavailable, please review patient history manually.",
     };
 
-    res.status(200).json({
-      success: true,
-      data: parsed || fallbackData,
-      message: parsed ? "Risk analysis generated" : "AI fallback used",
-      count: 1,
-    });
+    return ApiResponse.success(
+      res,
+      parsed || fallbackData,
+      parsed ? "Risk analysis generated" : "AI fallback used"
+    );
   } catch (error) {
     next(error);
   }
