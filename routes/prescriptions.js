@@ -12,15 +12,19 @@ import {
 
 const router = express.Router();
 router.use(auth);
-router.get("/", getPrescriptions);
+router.get("/", roleCheck("admin", "doctor", "patient"), getPrescriptions);
 router.post(
   "/",
   roleCheck("doctor"),
   createPrescriptionValidation,
   createPrescription
 );
-router.get("/:id/pdf", downloadPrescriptionPDF);
-router.get("/:id", getPrescription);
+router.get(
+  "/:id/pdf",
+  roleCheck("admin", "doctor", "patient"),
+  downloadPrescriptionPDF
+);
+router.get("/:id", roleCheck("admin", "doctor", "patient"), getPrescription);
 router.put("/:id", roleCheck("doctor"), updatePrescription);
 
 export default router;
