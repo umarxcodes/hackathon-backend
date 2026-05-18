@@ -66,14 +66,36 @@ app.use("*", (req, res) =>
 
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const DEFAULT_PORT = Number(process.env.PORT) || 5000;
+let server;
+
+const startServer = (port, attempt = 0) => {
+  const maxAttempts = 5;
+  server = app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE" && attempt < maxAttempts) {
+      const nextPort = port + 1;
+      console.warn(
+        `Port ${port} in use, trying port ${nextPort} (attempt ${attempt + 1})`
+      );
+      // give a short delay before retrying
+      setTimeout(() => startServer(nextPort, attempt + 1), 300);
+    } else {
+      console.error("Server error:", err);
+      process.exit(1);
+    }
+  });
+};
+
+startServer(DEFAULT_PORT);
 
 process.on("unhandledRejection", (err) => {
   console.error("Unhandled Rejection:", err);
-  server.close(() => process.exit(1));
+  if (server && server.close) server.close(() => process.exit(1));
+  else process.exit(1);
 });
 
 process.on("uncaughtException", (err) => {
