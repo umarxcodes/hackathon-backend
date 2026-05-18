@@ -21,7 +21,7 @@ const auth = async (req, res, next) => {
         .json({ success: false, error: "Invalid or expired token" });
     }
 
-    const user = await User.findById(decoded.id).select("+isActive role");
+    const user = await User.findById(decoded.id).select("isActive role");
     if (!user)
       return res
         .status(401)

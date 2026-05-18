@@ -5,37 +5,65 @@ import Prescription from "../models/Prescription.js";
 import User from "../models/User.js";
 import ApiResponse from "../utils/ApiResponse.js";
 
+const getLastSixMonths = () => {
+  const now = new Date();
+  return Array.from({ length: 6 })
+    .map((_, index) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+      const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      return { month, count: 0 };
+    })
+    .reverse();
+};
+
 export const getAdminAnalytics = async (req, res, next) => {
   try {
+    const months = getLastSixMonths();
+    const firstMonth = new Date(`${months[0].month}-01T00:00:00.000Z`);
     const [
       totalPatients,
       totalDoctors,
       totalAppointments,
-      appointmentsByMonth,
-      topDiagnoses,
+      appointmentBuckets,
+      diagnosisBuckets,
+      symptomBuckets,
       doctorPerformance,
     ] = await Promise.all([
       Patient.countDocuments(),
       User.countDocuments({ role: "doctor" }),
       Appointment.countDocuments(),
       Appointment.aggregate([
-        { $match: { date: { $exists: true } } },
+        { $match: { date: { $gte: firstMonth } } },
         {
           $group: {
             _id: { $dateToString: { format: "%Y-%m", date: "$date" } },
             count: { $sum: 1 },
           },
         },
-        { $sort: { _id: -1 } },
-        { $limit: 6 },
+        { $sort: { _id: 1 } },
         { $project: { month: "$_id", count: 1, _id: 0 } },
       ]),
       DiagnosisLog.aggregate([
         { $unwind: "$aiResponse.conditions" },
+        { $match: { "aiResponse.conditions": { $ne: "" } } },
         { $group: { _id: "$aiResponse.conditions", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 5 },
         { $project: { condition: "$_id", count: 1, _id: 0 } },
+      ]),
+      DiagnosisLog.aggregate([
+        { $unwind: "$symptoms" },
+        { $match: { symptoms: { $ne: "" } } },
+        { $group: { _id: "$symptoms", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 },
+        {
+          $project: {
+            condition: { $concat: ["Symptom: ", "$_id"] },
+            count: 1,
+            _id: 0,
+          },
+        },
       ]),
       Appointment.aggregate([
         {
@@ -62,27 +90,20 @@ export const getAdminAnalytics = async (req, res, next) => {
             total: 1,
             completed: 1,
             rate: {
-              $concat: [
+              $round: [
                 {
-                  $toString: {
-                    $round: [
-                      {
-                        $multiply: [
-                          {
-                            $cond: [
-                              { $eq: ["$total", 0] },
-                              0,
-                              { $divide: ["$completed", "$total"] },
-                            ],
-                          },
-                          100,
-                        ],
-                      },
-                      1,
-                    ],
-                  },
+                  $multiply: [
+                    {
+                      $cond: [
+                        { $eq: ["$total", 0] },
+                        0,
+                        { $divide: ["$completed", "$total"] },
+                      ],
+                    },
+                    100,
+                  ],
                 },
-                "%",
+                1,
               ],
             },
           },
@@ -90,6 +111,16 @@ export const getAdminAnalytics = async (req, res, next) => {
         { $sort: { total: -1 } },
       ]),
     ]);
+    const appointmentBucketMap = new Map(
+      appointmentBuckets.map((item) => [item.month, item.count])
+    );
+    const appointmentsByMonth = months.map((item) => ({
+      ...item,
+      count: appointmentBucketMap.get(item.month) || 0,
+    }));
+    const topDiagnoses = diagnosisBuckets.length
+      ? diagnosisBuckets
+      : symptomBuckets;
 
     return ApiResponse.success(
       res,
@@ -150,6 +181,9 @@ export const getDoctorAnalytics = async (req, res, next) => {
         todayAppointments,
         monthlyAppointments,
         totalPrescriptions,
+        totalAppointments,
+        completed: completedCount,
+        completedAppointments: completedCount,
         completionRate,
       },
       "Doctor analytics retrieved"
