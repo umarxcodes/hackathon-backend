@@ -22,7 +22,7 @@ export const register = async (req, res, next) => {
 
     return ApiResponse.success(
       res,
-      { user },
+      { user, token },
       "User registered successfully",
       201
     );
@@ -50,7 +50,7 @@ export const login = async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return ApiResponse.success(res, { user }, "Login successful");
+    return ApiResponse.success(res, { user, token }, "Login successful");
   } catch (error) {
     next(error);
   }
