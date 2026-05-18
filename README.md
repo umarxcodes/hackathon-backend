@@ -11,6 +11,8 @@
 
 **A production-ready REST API for AI-powered clinic management. Built with MERN stack, RBAC, input validation, and Anthropic Claude AI.**
 
+> Live backend: https://hackathon-backend-woad-two.vercel.app
+
 </div>
 
 ---
@@ -35,6 +37,7 @@
 ## ✨ Features
 
 ### 🔐 Auth & Security
+
 - JWT Authentication with httpOnly cookie support
 - Role-Based Access Control (4 roles: Admin, Doctor, Receptionist, Patient)
 - Rate limiting on all routes (stricter on auth endpoints)
@@ -43,12 +46,14 @@
 - Passwords hashed with bcrypt (12 rounds), never returned in responses
 
 ### 👥 User Management
+
 - Admin creates/manages all user accounts
 - Soft delete (deactivate instead of hard delete)
 - Subscription plan management (Free / Pro)
 - Doctor specialization field
 
 ### 🧑‍⚕️ Patient Management
+
 - Full patient profiles with medical history
 - Search by name (case-insensitive)
 - Paginated results
@@ -56,12 +61,14 @@
 - Cascade delete (removes all related records)
 
 ### 📅 Appointment System
+
 - Scheduling conflict detection (same doctor + same date + same time slot)
 - Status workflow: pending → confirmed → completed / cancelled
 - Doctor schedule view by date range
 - Role-filtered views per user type
 
 ### 💊 Prescription System
+
 - Digital prescriptions with medicines table
 - Auto PDF generation using PDFKit
 - PDF upload to Cloudinary
@@ -69,12 +76,14 @@
 - Patient-friendly AI explanation
 
 ### 🤖 AI Features (Anthropic Claude claude-sonnet-4-20250514)
+
 - Smart Symptom Checker — structured diagnosis from symptoms
 - Prescription Explanation — simple patient-friendly language
 - Risk Flagging — detects chronic patterns in history
 - **Graceful fallback** on every AI endpoint — system never crashes if AI fails
 
 ### 📊 Analytics
+
 - Admin dashboard with MongoDB aggregation pipelines
 - Doctor personal performance stats
 - Monthly appointment trends (last 6 months)
@@ -85,22 +94,22 @@
 
 ## 🛠 Tech Stack
 
-| Layer | Technology | Purpose |
-|---|---|---|
-| Runtime | Node.js 18+ | Server runtime |
-| Framework | Express.js | HTTP framework |
-| Database | MongoDB + Mongoose | Primary database |
-| Auth | JWT + bcryptjs | Authentication & password hashing |
-| AI | Anthropic Claude API v1 | AI-powered features |
-| Storage | Cloudinary | PDF & image storage |
-| PDF | PDFKit | Prescription PDF generation |
-| Validation | express-validator | Input validation layer |
-| Security | Helmet, HPP, XSS-Clean, mongo-sanitize | Security middleware stack |
-| Rate Limiting | express-rate-limit | API throttling |
-| Email | Nodemailer | Email notifications |
-| HTTP Client | Axios | External API calls |
-| Logging | Morgan | Request logging |
-| Package Manager | **Yarn** | Dependency management |
+| Layer           | Technology                             | Purpose                           |
+| --------------- | -------------------------------------- | --------------------------------- |
+| Runtime         | Node.js 18+                            | Server runtime                    |
+| Framework       | Express.js                             | HTTP framework                    |
+| Database        | MongoDB + Mongoose                     | Primary database                  |
+| Auth            | JWT + bcryptjs                         | Authentication & password hashing |
+| AI              | Anthropic Claude API v1                | AI-powered features               |
+| Storage         | Cloudinary                             | PDF & image storage               |
+| PDF             | PDFKit                                 | Prescription PDF generation       |
+| Validation      | express-validator                      | Input validation layer            |
+| Security        | Helmet, HPP, XSS-Clean, mongo-sanitize | Security middleware stack         |
+| Rate Limiting   | express-rate-limit                     | API throttling                    |
+| Email           | Nodemailer                             | Email notifications               |
+| HTTP Client     | Axios                                  | External API calls                |
+| Logging         | Morgan                                 | Request logging                   |
+| Package Manager | **Yarn**                               | Dependency management             |
 
 ---
 
@@ -177,12 +186,12 @@ clinic-backend/
 
 ### Prerequisites
 
-| Requirement | Version / Source |
-|---|---|
-| Node.js | 18+ |
-| Yarn | 1.22+ |
-| MongoDB Atlas | [mongodb.com/atlas](https://mongodb.com/atlas) — Free |
-| Cloudinary | [cloudinary.com](https://cloudinary.com) — Free |
+| Requirement       | Version / Source                                       |
+| ----------------- | ------------------------------------------------------ |
+| Node.js           | 18+                                                    |
+| Yarn              | 1.22+                                                  |
+| MongoDB Atlas     | [mongodb.com/atlas](https://mongodb.com/atlas) — Free  |
+| Cloudinary        | [cloudinary.com](https://cloudinary.com) — Free        |
 | Anthropic API Key | [console.anthropic.com](https://console.anthropic.com) |
 
 ### Installation
@@ -254,26 +263,27 @@ SMTP_PASS=your_gmail_app_password
 
 ## 👥 User Roles & Permissions
 
-| Action | Admin | Doctor | Receptionist | Patient |
-|---|:---:|:---:|:---:|:---:|
-| Manage users | ✅ | ❌ | ❌ | ❌ |
-| View all patients | ✅ | ✅ | ✅ | ❌ |
-| Create patient | ✅ | ❌ | ✅ | ❌ |
-| Book appointment | ✅ | ❌ | ✅ | ✅ |
-| View appointments | All | Own | All | Own |
-| Write prescription | ❌ | ✅ | ❌ | ❌ |
-| Download PDF | ✅ | ✅ | ❌ | ✅ |
-| AI symptom checker | ❌ | ✅ | ❌ | ❌ |
-| AI prescription explain | ❌ | ✅ | ❌ | ✅ |
-| AI risk flagging | ✅ | ✅ | ❌ | ❌ |
-| Admin analytics | ✅ | ❌ | ❌ | ❌ |
-| Doctor analytics | ❌ | ✅ | ❌ | ❌ |
+| Action                  | Admin | Doctor | Receptionist | Patient |
+| ----------------------- | :---: | :----: | :----------: | :-----: |
+| Manage users            |  ✅   |   ❌   |      ❌      |   ❌    |
+| View all patients       |  ✅   |   ✅   |      ✅      |   ❌    |
+| Create patient          |  ✅   |   ❌   |      ✅      |   ❌    |
+| Book appointment        |  ✅   |   ❌   |      ✅      |   ✅    |
+| View appointments       |  All  |  Own   |     All      |   Own   |
+| Write prescription      |  ❌   |   ✅   |      ❌      |   ❌    |
+| Download PDF            |  ✅   |   ✅   |      ❌      |   ✅    |
+| AI symptom checker      |  ❌   |   ✅   |      ❌      |   ❌    |
+| AI prescription explain |  ❌   |   ✅   |      ❌      |   ✅    |
+| AI risk flagging        |  ✅   |   ✅   |      ❌      |   ❌    |
+| Admin analytics         |  ✅   |   ❌   |      ❌      |   ❌    |
+| Doctor analytics        |  ❌   |   ✅   |      ❌      |   ❌    |
 
 ---
 
 ## 📡 API Documentation
 
 ### Base URL
+
 ```
 http://localhost:5000/api
 ```
@@ -282,14 +292,15 @@ http://localhost:5000/api
 
 ### 🔑 Auth — `/api/auth`
 
-| Method | Route | Auth | Description |
-|---|---|---|---|
-| POST | /register | Public | Register new user |
-| POST | /login | Public | Login + get JWT |
-| GET | /me | Protected | Current user info |
-| GET | /logout | Protected | Clear auth cookie |
+| Method | Route     | Auth      | Description       |
+| ------ | --------- | --------- | ----------------- |
+| POST   | /register | Public    | Register new user |
+| POST   | /login    | Public    | Login + get JWT   |
+| GET    | /me       | Protected | Current user info |
+| GET    | /logout   | Protected | Clear auth cookie |
 
 **POST /register — Body:**
+
 ```json
 {
   "name": "Dr. Ahmed Ali",
@@ -300,6 +311,7 @@ http://localhost:5000/api
 ```
 
 **POST /login — Response:**
+
 ```json
 {
   "success": true,
@@ -312,18 +324,19 @@ http://localhost:5000/api
 
 ### 👤 Users — `/api/users` (Admin)
 
-| Method | Route | Description |
-|---|---|---|
-| GET | / | All users (paginated) |
-| POST | / | Create user |
-| GET | /doctors | All active doctors ← before /:id |
-| GET | /:id | Single user |
-| PUT | /:id | Update user |
-| DELETE | /:id | Soft delete (deactivate) |
+| Method | Route    | Description                      |
+| ------ | -------- | -------------------------------- |
+| GET    | /        | All users (paginated)            |
+| POST   | /        | Create user                      |
+| GET    | /doctors | All active doctors ← before /:id |
+| GET    | /:id     | Single user                      |
+| PUT    | /:id     | Update user                      |
+| DELETE | /:id     | Soft delete (deactivate)         |
 
 **Query:** `?page=1&limit=10&role=doctor`
 
 **Paginated Response:**
+
 ```json
 {
   "success": true,
@@ -339,16 +352,17 @@ http://localhost:5000/api
 
 ### 🧑‍⚕️ Patients — `/api/patients`
 
-| Method | Route | Description |
-|---|---|---|
-| GET | / | All patients (search + paginate) |
-| POST | / | Create patient |
-| GET | /:id | Patient + full history |
-| PUT | /:id | Update patient |
-| DELETE | /:id | Delete + cascade (admin) |
-| GET | /:id/timeline | Full medical timeline |
+| Method | Route         | Description                      |
+| ------ | ------------- | -------------------------------- |
+| GET    | /             | All patients (search + paginate) |
+| POST   | /             | Create patient                   |
+| GET    | /:id          | Patient + full history           |
+| PUT    | /:id          | Update patient                   |
+| DELETE | /:id          | Delete + cascade (admin)         |
+| GET    | /:id/timeline | Full medical timeline            |
 
 **Timeline Response:**
+
 ```json
 {
   "success": true,
@@ -364,16 +378,17 @@ http://localhost:5000/api
 
 ### 📅 Appointments — `/api/appointments`
 
-| Method | Route | Description |
-|---|---|---|
-| GET | / | Role-filtered list |
-| POST | / | Book (conflict check) |
-| GET | /doctor/:doctorId | Doctor schedule ← before /:id |
-| GET | /:id | Single appointment |
-| PUT | /:id | Update status/notes |
-| DELETE | /:id | Cancel |
+| Method | Route             | Description                   |
+| ------ | ----------------- | ----------------------------- |
+| GET    | /                 | Role-filtered list            |
+| POST   | /                 | Book (conflict check)         |
+| GET    | /doctor/:doctorId | Doctor schedule ← before /:id |
+| GET    | /:id              | Single appointment            |
+| PUT    | /:id              | Update status/notes           |
+| DELETE | /:id              | Cancel                        |
 
 **POST Body:**
+
 ```json
 {
   "patientId": "64f...",
@@ -387,25 +402,26 @@ http://localhost:5000/api
 
 ### 💊 Prescriptions — `/api/prescriptions`
 
-| Method | Route | Description |
-|---|---|---|
-| GET | / | Role-filtered list |
-| POST | / | Create (doctor only) |
-| GET | /:id | Single prescription |
-| PUT | /:id | Update (doctor only) |
-| GET | /:id/pdf | Download PDF |
+| Method | Route    | Description          |
+| ------ | -------- | -------------------- |
+| GET    | /        | Role-filtered list   |
+| POST   | /        | Create (doctor only) |
+| GET    | /:id     | Single prescription  |
+| PUT    | /:id     | Update (doctor only) |
+| GET    | /:id/pdf | Download PDF         |
 
 ---
 
 ### 🤖 AI — `/api/ai`
 
-| Method | Route | Role | Description |
-|---|---|---|---|
-| POST | /symptom-checker | Doctor | AI diagnosis from symptoms |
-| POST | /prescription-explanation | Doctor, Patient | Explain prescription |
-| POST | /risk-flag | Doctor, Admin | Detect risk patterns |
+| Method | Route                     | Role            | Description                |
+| ------ | ------------------------- | --------------- | -------------------------- |
+| POST   | /symptom-checker          | Doctor          | AI diagnosis from symptoms |
+| POST   | /prescription-explanation | Doctor, Patient | Explain prescription       |
+| POST   | /risk-flag                | Doctor, Admin   | Detect risk patterns       |
 
 **Symptom Checker Request:**
+
 ```json
 {
   "patientId": "64f...",
@@ -417,6 +433,7 @@ http://localhost:5000/api
 ```
 
 **Symptom Checker Response (AI success):**
+
 ```json
 {
   "success": true,
@@ -432,11 +449,16 @@ http://localhost:5000/api
 ```
 
 **Symptom Checker Response (AI unavailable — graceful):**
+
 ```json
 {
   "success": true,
   "data": {
-    "aiResponse": { "conditions": [], "riskLevel": "unknown", "suggestedTests": [] },
+    "aiResponse": {
+      "conditions": [],
+      "riskLevel": "unknown",
+      "suggestedTests": []
+    },
     "fallback": true,
     "message": "AI service temporarily unavailable. Record saved."
   }
@@ -447,12 +469,13 @@ http://localhost:5000/api
 
 ### 📊 Analytics — `/api/analytics`
 
-| Method | Route | Role | Description |
-|---|---|---|---|
-| GET | /admin | Admin | Full system stats |
-| GET | /doctor | Doctor | Personal stats |
+| Method | Route   | Role   | Description       |
+| ------ | ------- | ------ | ----------------- |
+| GET    | /admin  | Admin  | Full system stats |
+| GET    | /doctor | Doctor | Personal stats    |
 
 **Admin Response:**
+
 ```json
 {
   "success": true,
@@ -460,9 +483,16 @@ http://localhost:5000/api
     "totalPatients": 312,
     "totalDoctors": 8,
     "totalAppointments": 1547,
-    "appointmentsByMonth": [ { "month": "2025-01", "count": 301 } ],
-    "topDiagnoses": [ { "condition": "Flu", "count": 89 } ],
-    "doctorPerformance": [ { "doctorName": "Dr. Ahmed", "total": 245, "completed": 231, "rate": 94.3 } ]
+    "appointmentsByMonth": [{ "month": "2025-01", "count": 301 }],
+    "topDiagnoses": [{ "condition": "Flu", "count": 89 }],
+    "doctorPerformance": [
+      {
+        "doctorName": "Dr. Ahmed",
+        "total": 245,
+        "completed": 231,
+        "rate": 94.3
+      }
+    ]
   }
 }
 ```
@@ -494,27 +524,27 @@ http://localhost:5000/api
 
 All routes have validation in `validations/` using `express-validator`.
 
-| Route | Validated |
-|---|---|
-| POST /auth/register | name, email, password (strength), role |
-| POST /auth/login | email, password |
-| POST /users | name, email, password, role |
-| POST /patients | name, age, gender, contact, bloodGroup |
-| POST /appointments | patientId (MongoId), doctorId, date (not past), timeSlot |
-| POST /prescriptions | patientId, medicines[] (min 1), each medicine fields |
-| POST /ai/symptom-checker | patientId, symptoms[] (min 1), age, gender |
+| Route                    | Validated                                                |
+| ------------------------ | -------------------------------------------------------- |
+| POST /auth/register      | name, email, password (strength), role                   |
+| POST /auth/login         | email, password                                          |
+| POST /users              | name, email, password, role                              |
+| POST /patients           | name, age, gender, contact, bloodGroup                   |
+| POST /appointments       | patientId (MongoId), doctorId, date (not past), timeSlot |
+| POST /prescriptions      | patientId, medicines[] (min 1), each medicine fields     |
+| POST /ai/symptom-checker | patientId, symptoms[] (min 1), age, gender               |
 
 ---
 
 ## 🤖 AI Integration Details
 
-| Property | Value |
-|---|---|
-| Endpoint | `https://api.anthropic.com/v1/messages` |
-| Model | `claude-sonnet-4-20250514` |
-| Header | `anthropic-version: 2023-06-01` |
-| Auth | `x-api-key: ANTHROPIC_API_KEY` |
-| Timeout | 30 seconds |
+| Property | Value                                    |
+| -------- | ---------------------------------------- |
+| Endpoint | `https://api.anthropic.com/v1/messages`  |
+| Model    | `claude-sonnet-4-20250514`               |
+| Header   | `anthropic-version: 2023-06-01`          |
+| Auth     | `x-api-key: ANTHROPIC_API_KEY`           |
+| Timeout  | 30 seconds                               |
 | Fallback | Always — never returns 500 on AI failure |
 
 ---
@@ -536,34 +566,46 @@ DiagnosisLogs: _id, patientId, doctorId, symptoms[], aiResponse{}, riskLevel, is
 
 ## 🔒 Security
 
-| Layer | Implementation |
-|---|---|
-| Auth | JWT + httpOnly cookie |
-| Passwords | bcrypt (12 rounds), select:false |
-| XSS | xss-clean middleware |
-| NoSQL Injection | express-mongo-sanitize |
-| HTTP Pollution | hpp middleware |
-| Headers | Helmet.js |
-| Rate Limiting | 100 req/15min general, 10 req/15min auth |
-| CORS | CLIENT_URL whitelist |
-| Validation | express-validator on every route |
+| Layer           | Implementation                           |
+| --------------- | ---------------------------------------- |
+| Auth            | JWT + httpOnly cookie                    |
+| Passwords       | bcrypt (12 rounds), select:false         |
+| XSS             | xss-clean middleware                     |
+| NoSQL Injection | express-mongo-sanitize                   |
+| HTTP Pollution  | hpp middleware                           |
+| Headers         | Helmet.js                                |
+| Rate Limiting   | 100 req/15min general, 10 req/15min auth |
+| CORS            | CLIENT_URL whitelist                     |
+| Validation      | express-validator on every route         |
 
 ---
 
 ## 🌐 Deployment
 
-### Backend → Render
+### Backend → Vercel
+
+Live backend: https://hackathon-backend-woad-two.vercel.app
 
 ```
-Build Command:  yarn install
-Start Command:  yarn start
-Add all .env variables in Render dashboard
+Build Command: yarn install
+Start Command: yarn start
 ```
+
+Add all backend environment variables in Vercel dashboard, including:
+
+- `MONGO_URI`
+- `JWT_SECRET`
+- `ANTHROPIC_API_KEY`
+- `CLIENT_URL`
+- email/SMTP keys
+- Cloudinary keys (if used)
 
 ### Frontend → Vercel
 
+If you also deploy the frontend to Vercel, point it at this backend:
+
 ```bash
-VITE_API_URL=https://your-clinic-api.render.com/api
+VITE_API_URL=https://hackathon-backend-woad-two.vercel.app/api
 ```
 
 ### Database → MongoDB Atlas
