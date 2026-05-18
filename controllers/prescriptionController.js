@@ -1,6 +1,37 @@
 import Prescription from "../models/Prescription.js";
+import Appointment from "../models/Appointment.js";
 import generatePrescriptionPDF from "../utils/generatePDF.js";
 import ApiResponse from "../utils/ApiResponse.js";
+
+const getPatientOwnedPrescriptionQuery = async (userId) => {
+  const appointments = await Appointment.find({ bookedBy: userId }).select(
+    "_id patientId"
+  );
+  const appointmentIds = appointments.map((item) => item._id);
+  const patientIds = appointments.map((item) => item.patientId).filter(Boolean);
+  return {
+    $or: [
+      { appointmentId: { $in: appointmentIds } },
+      { patientId: { $in: patientIds } },
+    ],
+  };
+};
+
+const canAccessPrescription = async (prescription, user) => {
+  if (user.role === "admin") return true;
+  if (user.role === "doctor") {
+    return prescription.doctorId?.toString() === user.id;
+  }
+  if (user.role === "patient") {
+    const query = await getPatientOwnedPrescriptionQuery(user.id);
+    const owned = await Prescription.exists({
+      _id: prescription._id,
+      ...query,
+    });
+    return Boolean(owned);
+  }
+  return false;
+};
 
 export const getPrescriptions = async (req, res, next) => {
   try {
@@ -9,15 +40,7 @@ export const getPrescriptions = async (req, res, next) => {
 
     if (role === "doctor") query.doctorId = id;
     if (role === "patient") {
-      const patientId = req.query.patientId;
-      if (!patientId) {
-        return ApiResponse.error(
-          res,
-          "patientId query is required for patient access",
-          400
-        );
-      }
-      query.patientId = patientId;
+      Object.assign(query, await getPatientOwnedPrescriptionQuery(id));
     }
 
     const prescriptions = await Prescription.find(query)
@@ -33,11 +56,10 @@ export const getPrescriptions = async (req, res, next) => {
 
 export const createPrescription = async (req, res, next) => {
   try {
-    const { patientId, doctorId, appointmentId, medicines, instructions } =
-      req.body;
+    const { patientId, appointmentId, medicines, instructions } = req.body;
     const prescription = await Prescription.create({
       patientId,
-      doctorId,
+      doctorId: req.user.id,
       appointmentId,
       medicines,
       instructions,
@@ -58,6 +80,13 @@ export const getPrescription = async (req, res, next) => {
 
     if (!prescription) {
       return ApiResponse.error(res, "Prescription not found", 404);
+    }
+    if (!(await canAccessPrescription(prescription, req.user))) {
+      return ApiResponse.error(
+        res,
+        "Not authorized to access prescription",
+        403
+      );
     }
     return ApiResponse.success(res, prescription, "Prescription retrieved");
   } catch (error) {
@@ -104,6 +133,13 @@ export const downloadPrescriptionPDF = async (req, res, next) => {
 
     if (!prescription) {
       return ApiResponse.error(res, "Prescription not found", 404);
+    }
+    if (!(await canAccessPrescription(prescription, req.user))) {
+      return ApiResponse.error(
+        res,
+        "Not authorized to download prescription",
+        403
+      );
     }
 
     const patient = prescription.patientId;
