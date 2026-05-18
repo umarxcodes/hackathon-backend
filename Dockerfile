@@ -2,12 +2,12 @@ FROM node:22
 
 WORKDIR /app
 
-COPY package.json yarn.lock ./
+COPY package.json ./
 
-RUN yarn install
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
 EXPOSE 5000
 
-CMD ["yarn", "dev"]
+CMD ["npm", "run", "dev"]
