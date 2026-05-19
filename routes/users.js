@@ -18,7 +18,11 @@ const router = express.Router();
 router.use(auth);
 router.get("/", roleCheck("admin"), getUsers);
 router.post("/", roleCheck("admin"), createUserValidation, createUser);
-router.get("/doctors", roleCheck("admin", "receptionist"), getDoctors);
+router.get(
+  "/doctors",
+  roleCheck("admin", "receptionist", "doctor", "patient"),
+  getDoctors
+);
 router.get("/:id", roleCheck("admin"), getUser);
 router.put("/:id", roleCheck("admin"), updateUserValidation, updateUser);
 router.delete("/:id", roleCheck("admin"), deleteUser);
